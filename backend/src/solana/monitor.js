@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
-import { getConnection } from './connection.js';
+import { getConnection, reinitializeConnection } from './connection.js';
 import { config } from '../config.js';
 
 // Pump.fun program ID
@@ -7,6 +7,9 @@ const PUMP_FUN_PROGRAM_ID = new PublicKey('6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5u
 
 let subscriptionId = null;
 let onBuyCallback = null;
+let demoInterval = null;
+let currentTokenMint = null;
+let isMonitoring = false;
 
 export function setOnBuyCallback(callback) {
   onBuyCallback = callback;
@@ -19,8 +22,13 @@ export async function startMonitoring() {
     return;
   }
 
+  // Stop any existing monitoring first
+  stopMonitoring();
+
   const connection = getConnection();
   const tokenMint = new PublicKey(config.token.mint);
+  currentTokenMint = config.token.mint;
+  isMonitoring = true;
 
   console.log(`🔍 Monitoring token: ${config.token.mint}`);
 
@@ -109,17 +117,74 @@ function extractBuyer(tx) {
 }
 
 export function stopMonitoring() {
+  // Stop WebSocket subscription
   if (subscriptionId !== null) {
-    const connection = getConnection();
-    connection.removeOnLogsListener(subscriptionId);
+    try {
+      const connection = getConnection();
+      connection.removeOnLogsListener(subscriptionId);
+    } catch (error) {
+      console.error('Error removing logs listener:', error.message);
+    }
     subscriptionId = null;
-    console.log('🛑 Transaction monitoring stopped');
   }
+
+  // Stop demo mode interval
+  if (demoInterval !== null) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+  }
+
+  isMonitoring = false;
+  currentTokenMint = null;
+  console.log('🛑 Transaction monitoring stopped');
+}
+
+/**
+ * Restart monitoring with new configuration
+ * This is the key function for hot reload
+ */
+export async function restartMonitoring() {
+  console.log('🔄 Restarting monitoring with new configuration...');
+
+  // Stop current monitoring
+  stopMonitoring();
+
+  // Reinitialize connection
+  reinitializeConnection();
+
+  // Start monitoring with new config
+  await startMonitoring();
+
+  console.log('✅ Monitoring restarted successfully');
+
+  return {
+    success: true,
+    tokenMint: config.token.mint,
+    isDemo: !config.token.mint,
+  };
+}
+
+/**
+ * Get current monitoring status
+ */
+export function getMonitoringStatus() {
+  return {
+    isMonitoring,
+    currentTokenMint,
+    isDemo: demoInterval !== null,
+    subscriptionId: subscriptionId !== null ? 'active' : null,
+  };
 }
 
 // Demo mode for testing without real token
 function startDemoMode() {
+  // Stop any existing demo mode
+  if (demoInterval !== null) {
+    clearInterval(demoInterval);
+  }
+
   console.log('🎮 Demo mode active - simulating buy transactions');
+  isMonitoring = true;
 
   const demoWallets = [
     'DemoWallet1111111111111111111111111111111111',
@@ -130,7 +195,7 @@ function startDemoMode() {
   ];
 
   // Simulate random buys every 3-8 seconds
-  setInterval(() => {
+  demoInterval = setInterval(() => {
     const randomWallet = demoWallets[Math.floor(Math.random() * demoWallets.length)];
     if (onBuyCallback) {
       console.log(`🎮 [DEMO] Buy simulated from: ${randomWallet}`);

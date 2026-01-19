@@ -17,8 +17,12 @@ out/
 .env.production.local
 *.local
 
+# Dynamic configuration (contains sensitive data)
+backend/data/config.json
+
 # Game data
-backend/data/
+backend/data/gamestate.json
+backend/data/history.json
 
 # Logs
 logs
@@ -45,3 +49,9 @@ coverage/
 # Misc
 *.pem
 *.key
+
+# Vercel
+.vercel
+
+# Railway
+.railway

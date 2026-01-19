@@ -15,6 +15,23 @@ export function getConnection() {
   return connection;
 }
 
+/**
+ * Reset the connection (used for hot reload)
+ */
+export function resetConnection() {
+  connection = null;
+  devWalletKeypair = null;
+  console.log('🔄 Connection reset');
+}
+
+/**
+ * Reinitialize connection with current config
+ */
+export function reinitializeConnection() {
+  resetConnection();
+  return getConnection();
+}
+
 export function getDevWalletKeypair() {
   if (!devWalletKeypair && config.devWallet.privateKey) {
     try {
@@ -25,6 +42,14 @@ export function getDevWalletKeypair() {
     }
   }
   return devWalletKeypair;
+}
+
+/**
+ * Reload dev wallet keypair with new private key
+ */
+export function reloadDevWalletKeypair() {
+  devWalletKeypair = null;
+  return getDevWalletKeypair();
 }
 
 export async function getDevWalletBalance() {
@@ -39,6 +64,44 @@ export async function getDevWalletBalance() {
   } catch (error) {
     console.error('Failed to get dev wallet balance:', error.message);
     return 0;
+  }
+}
+
+/**
+ * Validate a Solana address
+ */
+export function isValidSolanaAddress(address) {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate a Base58 private key
+ */
+export function isValidPrivateKey(privateKey) {
+  try {
+    const secretKey = bs58.decode(privateKey);
+    Keypair.fromSecretKey(secretKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get public key from private key
+ */
+export function getPublicKeyFromPrivate(privateKey) {
+  try {
+    const secretKey = bs58.decode(privateKey);
+    const keypair = Keypair.fromSecretKey(secretKey);
+    return keypair.publicKey.toString();
+  } catch {
+    return null;
   }
 }
 
