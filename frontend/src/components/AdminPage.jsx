@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './AdminPage.css';
 
-const API_URL = import.meta.env.PROD ? '' : 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

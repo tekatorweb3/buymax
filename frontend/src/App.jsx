@@ -10,8 +10,8 @@ import Footer from './components/Footer';
 import AdminPage from './components/AdminPage';
 import './styles/App.css';
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3001');
-const SOCKET_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3001');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function App() {
   const [gameState, setGameState] = useState(null);
